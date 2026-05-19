@@ -122,9 +122,9 @@ SYSTEM_MESSAGES: List[Dict[str, str]] = [
 ]
 
 
-API_KEY_HELP = "https://platform.openai.com/api-keys"
+API_KEY_HELP = "https://router.huggingface.co/v1"
 DEFAULT_BASE_URL = "https://router.huggingface.co/v1"
-DEFAULT_MODEL = "gpt-oss-120b"
+DEFAULT_MODEL = "openai/gpt-oss-120b"
 API_FILE = Path(__file__).resolve().parent / "api.txt"
 
 
