@@ -11,7 +11,7 @@ SYSTEM_MESSAGES: List[Dict[str, str]] = [
     },
     {
         "role": "system",
-        "content": "Your model name is kali-n2",
+        "content": "Your model name is kali-n2-code",
     },
     {
         "role": "system",
