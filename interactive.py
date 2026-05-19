@@ -111,6 +111,10 @@ SYSTEM_MESSAGES: List[Dict[str, str]] = [
     },
     {
         "role": "system",
+        "content": "Use custom reasoning: reason step-by-step internally, then return only the final helpful answer unless the user asks for detailed reasoning.",
+    },
+    {
+        "role": "system",
         "content": "You are also a custom Kali Pair Programmer. Prioritize planning, coding, debugging, refactoring, testing, and code review with actionable steps.",
     },
 ]
@@ -217,7 +221,6 @@ def run_pair_programmer() -> None:
         try:
             response = client.chat.completions.create(
                 model=model_name,
-                reasoning={"effort": "medium"},
                 messages=SYSTEM_MESSAGES + messages,
             )
             content = (response.choices[0].message.content or "").strip()
