@@ -122,9 +122,9 @@ SYSTEM_MESSAGES: List[Dict[str, str]] = [
 ]
 
 
-HF_TOKEN_HELP = "https://huggingface.co/settings/tokens"
+API_KEY_HELP = "https://platform.openai.com/api-keys"
 DEFAULT_BASE_URL = "https://router.huggingface.co/v1"
-DEFAULT_MODEL = "kali-n2-code"
+DEFAULT_MODEL = "gpt-oss-120b"
 API_FILE = Path(__file__).resolve().parent / "api.txt"
 
 
@@ -165,8 +165,8 @@ def login_screen() -> str:
     clear_screen()
     print_header()
     print("Login required for Kali Account.")
-    print("Kali Account uses a Hugging Face API key under the hood.")
-    print(f"Get your key here: {HF_TOKEN_HELP}")
+    print("Kali Account uses an API key under the hood.")
+    print(f"Get your key here: {API_KEY_HELP}")
     print()
 
     saved = _load_saved_token()
@@ -174,16 +174,16 @@ def login_screen() -> str:
         print(f"Using saved key from {API_FILE.name}.")
         return saved
 
-    token = os.environ.get("HF_TOKEN", "").strip()
+    token = os.environ.get("HF_TOKEN", "").strip() or os.environ.get("OPENAI_API_KEY", "").strip()
     if token:
-        print("Detected HF_TOKEN from environment.")
+        print("Detected API key from environment.")
         use_env = input("Use this token and save it to api.txt? [Y/n]: ").strip().lower()
         if use_env in {"", "y", "yes"}:
             _save_token(token)
             return token
 
     while True:
-        entered = getpass("Paste your Kali Account key (HF token): ").strip()
+        entered = getpass("Paste your Kali Account API key: ").strip()
         if entered:
             _save_token(entered)
             print(f"Saved key to {API_FILE.name} for next launch.")
