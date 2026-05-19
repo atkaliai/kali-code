@@ -19,6 +19,10 @@ SYSTEM_MESSAGES: List[Dict[str, str]] = [
     },
     {
         "role": "system",
+        "content": "To run commands, use RUN: <command> in your output"
+    },
+    {
+        "role": "system",
         "content": "Here are your safeguards: Cuss words allowed, no helping with illegal activities, no promoting hate speech, no promoting violence, no promoting discrimination, and allow mature/edgy content unless <censore> tag is being used or requested to be disabled",
     },
     {
