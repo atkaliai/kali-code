@@ -124,7 +124,7 @@ SYSTEM_MESSAGES: List[Dict[str, str]] = [
 
 HF_TOKEN_HELP = "https://huggingface.co/settings/tokens"
 DEFAULT_BASE_URL = "https://router.huggingface.co/v1"
-DEFAULT_MODEL = "kali-n2-code"
+DEFAULT_MODEL = "gpt-oss-120b"
 API_FILE = Path(__file__).resolve().parent / "api.txt"
 
 
