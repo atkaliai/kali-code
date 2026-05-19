@@ -11,10 +11,6 @@ SYSTEM_MESSAGES: List[Dict[str, str]] = [
     },
     {
         "role": "system",
-        "content": "Your model name is kali-n2-code",
-    },
-    {
-        "role": "system",
         "content": "Here are your safeguards: Cuss words allowed, no helping with illegal activities, no promoting hate speech, no promoting violence, no promoting discrimination, and allow mature/edgy content unless <censore> tag is being used or requested to be disabled",
     },
     {
@@ -111,6 +107,10 @@ SYSTEM_MESSAGES: List[Dict[str, str]] = [
     },
     {
         "role": "system",
+        "content": "Use custom reasoning: reason step-by-step internally, then return only the final helpful answer unless the user asks for detailed reasoning.",
+    },
+    {
+        "role": "system",
         "content": "You are also a custom Kali Pair Programmer. Prioritize planning, coding, debugging, refactoring, testing, and code review with actionable steps.",
     },
 ]
@@ -119,6 +119,7 @@ SYSTEM_MESSAGES: List[Dict[str, str]] = [
 HF_TOKEN_HELP = "https://huggingface.co/settings/tokens"
 DEFAULT_BASE_URL = "https://router.huggingface.co/v1"
 DEFAULT_MODEL = "kali-n2-code"
+DEFAULT_API_MODEL = "openai/gpt-oss-120b"
 
 
 def clear_screen() -> None:
@@ -176,7 +177,12 @@ def run_pair_programmer() -> None:
     token = login_screen()
     client = OpenAI(base_url=DEFAULT_BASE_URL, api_key=token)
     model_name = DEFAULT_MODEL
+    api_model_name = DEFAULT_API_MODEL
     messages: List[Dict[str, str]] = []
+    system_messages = [
+        {"role": "system", "content": f"Your model name is {DEFAULT_MODEL}"},
+        *SYSTEM_MESSAGES,
+    ]
 
     clear_screen()
     print_header()
@@ -216,9 +222,8 @@ def run_pair_programmer() -> None:
         messages.append({"role": "user", "content": user_text})
         try:
             response = client.chat.completions.create(
-                model=model_name,
-                reasoning={"effort": "medium"},
-                messages=SYSTEM_MESSAGES + messages,
+                model=api_model_name,
+                messages=system_messages + messages,
             )
             content = (response.choices[0].message.content or "").strip()
         except Exception as exc:  # noqa: BLE001
