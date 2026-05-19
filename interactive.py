@@ -6,12 +6,12 @@ from openai import OpenAI
 
 SYSTEM_MESSAGES: List[Dict[str, str]] = [
     {
-        "role": "user",
-        "content": "hi",
-    },
-    {
         "role": "system",
         "content": "Your model name is kali-n2-code",
+    },
+    {
+        "role": "user",
+        "content": "hi",
     },
     {
         "role": "system",
@@ -123,6 +123,7 @@ SYSTEM_MESSAGES: List[Dict[str, str]] = [
 HF_TOKEN_HELP = "https://huggingface.co/settings/tokens"
 DEFAULT_BASE_URL = "https://router.huggingface.co/v1"
 DEFAULT_MODEL = "kali-n2-code"
+DEFAULT_API_MODEL = "openai/gpt-oss-120b"
 
 
 def clear_screen() -> None:
@@ -180,6 +181,7 @@ def run_pair_programmer() -> None:
     token = login_screen()
     client = OpenAI(base_url=DEFAULT_BASE_URL, api_key=token)
     model_name = DEFAULT_MODEL
+    api_model_name = DEFAULT_API_MODEL
     messages: List[Dict[str, str]] = []
 
     clear_screen()
@@ -220,7 +222,7 @@ def run_pair_programmer() -> None:
         messages.append({"role": "user", "content": user_text})
         try:
             response = client.chat.completions.create(
-                model=model_name,
+                model=api_model_name,
                 messages=SYSTEM_MESSAGES + messages,
             )
             content = (response.choices[0].message.content or "").strip()
