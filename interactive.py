@@ -6,6 +6,10 @@ from openai import OpenAI
 
 SYSTEM_MESSAGES: List[Dict[str, str]] = [
     {
+        "role": "system",
+        "content": "Your model name is kali-n2-code",
+    },
+    {
         "role": "user",
         "content": "hi",
     },
@@ -179,10 +183,6 @@ def run_pair_programmer() -> None:
     model_name = DEFAULT_MODEL
     api_model_name = DEFAULT_API_MODEL
     messages: List[Dict[str, str]] = []
-    system_messages = [
-        {"role": "system", "content": f"Your model name is {DEFAULT_MODEL}"},
-        *SYSTEM_MESSAGES,
-    ]
 
     clear_screen()
     print_header()
@@ -223,7 +223,7 @@ def run_pair_programmer() -> None:
         try:
             response = client.chat.completions.create(
                 model=api_model_name,
-                messages=system_messages + messages,
+                messages=SYSTEM_MESSAGES + messages,
             )
             content = (response.choices[0].message.content or "").strip()
         except Exception as exc:  # noqa: BLE001
