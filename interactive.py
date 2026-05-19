@@ -1,5 +1,7 @@
 import os
+import subprocess
 from getpass import getpass
+from pathlib import Path
 from typing import Dict, List
 
 from openai import OpenAI
@@ -123,6 +125,7 @@ SYSTEM_MESSAGES: List[Dict[str, str]] = [
 HF_TOKEN_HELP = "https://huggingface.co/settings/tokens"
 DEFAULT_BASE_URL = "https://router.huggingface.co/v1"
 DEFAULT_MODEL = "kali-n2-code"
+API_FILE = Path(__file__).resolve().parent / "api.txt"
 
 
 def clear_screen() -> None:
@@ -144,6 +147,20 @@ def print_header() -> None:
     print()
 
 
+def _save_token(token: str) -> None:
+    API_FILE.write_text(token.strip() + "\n", encoding="utf-8")
+    try:
+        os.chmod(API_FILE, 0o600)
+    except OSError:
+        pass
+
+
+def _load_saved_token() -> str:
+    if not API_FILE.exists():
+        return ""
+    return API_FILE.read_text(encoding="utf-8").strip()
+
+
 def login_screen() -> str:
     clear_screen()
     print_header()
@@ -152,16 +169,24 @@ def login_screen() -> str:
     print(f"Get your key here: {HF_TOKEN_HELP}")
     print()
 
+    saved = _load_saved_token()
+    if saved:
+        print(f"Using saved key from {API_FILE.name}.")
+        return saved
+
     token = os.environ.get("HF_TOKEN", "").strip()
     if token:
         print("Detected HF_TOKEN from environment.")
-        use_env = input("Use this token? [Y/n]: ").strip().lower()
+        use_env = input("Use this token and save it to api.txt? [Y/n]: ").strip().lower()
         if use_env in {"", "y", "yes"}:
+            _save_token(token)
             return token
 
     while True:
         entered = getpass("Paste your Kali Account key (HF token): ").strip()
         if entered:
+            _save_token(entered)
+            print(f"Saved key to {API_FILE.name} for next launch.")
             return entered
         print("Token cannot be empty. Try again.\n")
 
@@ -172,8 +197,73 @@ def print_help(model_name: str) -> None:
     print("  /clear        Clear chat history")
     print("  /model        Show current model")
     print("  /setmodel X   Attempt to switch model (currently unavailable)")
+    print("  /run CMD      Run a local shell command")
     print("  /exit         Quit")
     print(f"\nCurrent model: {model_name}\n")
+
+
+def _run_shell_command(command: str) -> str:
+    result = subprocess.run(
+        command,
+        shell=True,
+        capture_output=True,
+        text=True,
+    )
+    out = result.stdout.strip()
+    err = result.stderr.strip()
+    payload = []
+    if out:
+        payload.append(f"STDOUT:\n{out}")
+    if err:
+        payload.append(f"STDERR:\n{err}")
+    payload.append(f"EXIT_CODE: {result.returncode}")
+    return "\n\n".join(payload)
+
+
+def _run_agentic_turn(
+    client: OpenAI,
+    model_name: str,
+    chat_messages: List[Dict[str, str]],
+    max_steps: int = 8,
+) -> str:
+    loop_messages = list(chat_messages)
+    loop_messages.append(
+        {
+            "role": "system",
+            "content": (
+                "Agent mode is always on. Decide whether to run shell commands. "
+                "Use exactly one line. Output either RUN: <shell command> to execute a command, "
+                "or REPLY: <message for the user> when ready to answer."
+            ),
+        }
+    )
+
+    for step in range(1, max_steps + 1):
+        response = client.chat.completions.create(
+            model=model_name,
+            messages=SYSTEM_MESSAGES + loop_messages,
+        )
+        content = (response.choices[0].message.content or "").strip()
+
+        if content.startswith("REPLY:"):
+            return content.removeprefix("REPLY:").strip()
+
+        if content.startswith("RUN:"):
+            command = content.removeprefix("RUN:").strip()
+            if not command:
+                return "I tried to run a command, but it was empty."
+
+            print(f"Kali[agent {step}]> Running: {command}")
+            cmd_output = _run_shell_command(command)
+            print(f"Kali[agent {step}]> Result:\n{cmd_output}\n")
+
+            loop_messages.append({"role": "assistant", "content": content})
+            loop_messages.append({"role": "user", "content": f"Command result:\n{cmd_output}"})
+            continue
+
+        return content
+
+    return "I stopped after reaching the maximum agent steps for this turn."
 
 
 def run_pair_programmer() -> None:
@@ -205,6 +295,14 @@ def run_pair_programmer() -> None:
         if user_text == "/model":
             print(f"Current model: {model_name}")
             continue
+        if user_text.startswith("/run "):
+            command = user_text.removeprefix("/run ").strip()
+            if not command:
+                print("Usage: /run <command>")
+            else:
+                print(f"Kali> Running: {command}")
+                print(f"Kali>\n{_run_shell_command(command)}\n")
+            continue
         if user_text.startswith("/setmodel "):
             new_model = user_text.removeprefix("/setmodel ").strip()
             if not new_model:
@@ -219,11 +317,7 @@ def run_pair_programmer() -> None:
 
         messages.append({"role": "user", "content": user_text})
         try:
-            response = client.chat.completions.create(
-                model=model_name,
-                messages=SYSTEM_MESSAGES + messages,
-            )
-            content = (response.choices[0].message.content or "").strip()
+            content = _run_agentic_turn(client, model_name, messages)
         except Exception as exc:  # noqa: BLE001
             print(f"Kali> Request failed: {exc}")
             continue
